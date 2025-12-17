@@ -1,8 +1,11 @@
 package xyz.mynt.bootcamp5.config;
 
+import io.flipt.api.FliptClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestTemplate;
+import xyz.mynt.bootcamp5.flag.MaintenanceFlag;
+import xyz.mynt.bootcamp5.flag.MaintenanceFlagImpl;
 import xyz.mynt.bootcamp5.remote.VoucherRemote;
 import xyz.mynt.bootcamp5.remote.VoucherRemoteImpl;
 import xyz.mynt.bootcamp5.service.ParcelCostService;
@@ -26,4 +29,15 @@ public class ServiceBeanConfig {
         return new VoucherRemoteImpl(restTemplate);
     }
 
+    @Bean
+    public MaintenanceFlag maintenanceFlag(FliptClient fliptClient) {
+        return new MaintenanceFlagImpl(fliptClient);
+    }
+
+    @Bean
+    public FliptClient fliptClient(FliptConfig config) {
+        return FliptClient.builder()
+                .url(config.getUrl())
+                .build();
+    }
 }

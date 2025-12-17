@@ -4,6 +4,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import xyz.mynt.bootcamp5.flag.MaintenanceEndpoint;
+import xyz.mynt.bootcamp5.flag.MaintenanceFlag;
 import xyz.mynt.bootcamp5.service.ParcelCostService;
 
 
@@ -13,10 +15,12 @@ public class ParcelCostRestController {
 
     private final ParcelCostService parcelCostService;
 
-    public ParcelCostRestController(ParcelCostService parcelCostService) {
-        this.parcelCostService = parcelCostService;
-    }
+    private final MaintenanceFlag maintenanceFlag;
 
+    public ParcelCostRestController(ParcelCostService parcelCostService, MaintenanceFlag maintenanceFlag) {
+        this.parcelCostService = parcelCostService;
+        this.maintenanceFlag = maintenanceFlag;
+    }
 
     @GetMapping("/v1")
     public ResponseEntity<?> computeV1(
@@ -25,6 +29,13 @@ public class ParcelCostRestController {
             @RequestParam("w") double width,
             @RequestParam("h") double height) {
 
+        // 3. Check if endpoint PARCEL_COST_API endpoint is in maintenance mode
+        if (!maintenanceFlag.isUp(MaintenanceEndpoint.PARCEL_COST_API)) {
+            // 3.1 Return 503
+            return ResponseEntity.status(503).body(new ErrorMessage("System under maintenance"));
+        }
+
+        // 4. Continue as BAU
         try {
             double cost;
 
@@ -41,6 +52,7 @@ public class ParcelCostRestController {
             return ResponseEntity.badRequest().body(new ErrorMessage(re.getMessage()));
         }
     }
+
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ResponseEntity<?> exceptionMissingParam(MissingServletRequestParameterException e) {
