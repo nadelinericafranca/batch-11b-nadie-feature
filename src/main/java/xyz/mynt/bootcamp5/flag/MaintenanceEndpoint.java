@@ -4,7 +4,7 @@ import lombok.Getter;
 
 public enum MaintenanceEndpoint {
 
-    PARCEL_COST_API("default", "parcelCostAPI_<name>"); // Replace the <name>
+    PARCEL_COST_API("default", "parcelCostAPI_nadie"); // Replace the <name>
 
     @Getter
     private String namespace;
