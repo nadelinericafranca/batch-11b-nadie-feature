@@ -6,6 +6,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import xyz.mynt.bootcamp5.flag.MaintenanceEndpoint;
 import xyz.mynt.bootcamp5.flag.MaintenanceFlag;
+import xyz.mynt.bootcamp5.flag.VoucherEndpoint;
+import xyz.mynt.bootcamp5.flag.VoucherFlag;
 import xyz.mynt.bootcamp5.service.ParcelCostService;
 
 
@@ -17,9 +19,12 @@ public class ParcelCostRestController {
 
     private final MaintenanceFlag maintenanceFlag;
 
-    public ParcelCostRestController(ParcelCostService parcelCostService, MaintenanceFlag maintenanceFlag) {
+    private final VoucherFlag voucherFlag;
+
+    public ParcelCostRestController(ParcelCostService parcelCostService, MaintenanceFlag maintenanceFlag, VoucherFlag voucherFlag) {
         this.parcelCostService = parcelCostService;
         this.maintenanceFlag = maintenanceFlag;
+        this.voucherFlag = voucherFlag;
     }
 
     @GetMapping("/v1")
@@ -39,20 +44,46 @@ public class ParcelCostRestController {
         try {
             double cost;
 
-            // Without Voucher
-            if (voucher == null) {
+            // With voucher and VoucherFlag is turned on
+            if (voucher != null && voucherFlag.isUp(VoucherEndpoint.VOUCHER_API)) {
+                cost = parcelCostService.computeCost(length, width, height, voucher);
+                return ResponseEntity.ok(new Cost(cost));
+            } else {  // Without Voucher or VoucherFlag is turned off
                 cost = parcelCostService.computeCost(length, width, height);
                 return ResponseEntity.ok(new Cost(cost));
             }
 
-            // With voucher
-            cost = parcelCostService.computeCost(length, width, height, voucher);
-            return ResponseEntity.ok(new Cost(cost));
         } catch (RuntimeException re) {
             return ResponseEntity.badRequest().body(new ErrorMessage(re.getMessage()));
         }
     }
 
+    @GetMapping("/v2")
+    public ResponseEntity<?> computeV2(
+            @RequestParam("v") String voucher,
+            @RequestParam("l") double length,
+            @RequestParam("w") double width,
+            @RequestParam("h") double height) {
+
+        // 3. Check if endpoint PARCEL_COST_API endpoint is in maintenance mode
+        if (!maintenanceFlag.isUp(MaintenanceEndpoint.PARCEL_COST_API)) {
+            // 3.1 Return 503
+            return ResponseEntity.status(503).body(new ErrorMessage("System under maintenance"));
+        }
+
+        // 4. Check if endpoint VOUCHER_API is enabled
+        if (!voucherFlag.isUp(VoucherEndpoint.VOUCHER_API)) {
+            return ResponseEntity.badRequest().body(new ErrorMessage("Voucher promotion is already expired"));
+        }
+
+        // 5. Continue as BAU
+        try {  // Apply voucher discount
+            double cost = parcelCostService.computeCost(length, width, height, voucher);
+            return ResponseEntity.ok(new Cost(cost));
+        } catch (RuntimeException re) {
+            return ResponseEntity.badRequest().body(new ErrorMessage(re.getMessage()));
+        }
+    }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ResponseEntity<?> exceptionMissingParam(MissingServletRequestParameterException e) {

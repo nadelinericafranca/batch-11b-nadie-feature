@@ -6,6 +6,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestTemplate;
 import xyz.mynt.bootcamp5.flag.MaintenanceFlag;
 import xyz.mynt.bootcamp5.flag.MaintenanceFlagImpl;
+import xyz.mynt.bootcamp5.flag.VoucherFlag;
+import xyz.mynt.bootcamp5.flag.VoucherFlagImpl;
 import xyz.mynt.bootcamp5.remote.VoucherRemote;
 import xyz.mynt.bootcamp5.remote.VoucherRemoteImpl;
 import xyz.mynt.bootcamp5.service.ParcelCostService;
@@ -32,6 +34,11 @@ public class ServiceBeanConfig {
     @Bean
     public MaintenanceFlag maintenanceFlag(FliptClient fliptClient) {
         return new MaintenanceFlagImpl(fliptClient);
+    }
+
+    @Bean
+    public VoucherFlag voucherFlag(FliptClient fliptClient) {
+        return new VoucherFlagImpl(fliptClient);
     }
 
     @Bean
